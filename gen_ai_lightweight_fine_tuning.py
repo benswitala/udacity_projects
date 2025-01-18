@@ -99,21 +99,15 @@ trainer.train()
 
 trainer.evaluate()
 
-from peft import LoraConfig, PeftModel
+from peft import LoraConfig, PeftModel, get_peft_model
 
-# Define LoraConfig
-# Define LoraConfig (without 'alpha')
-lora_config = LoraConfig(
-    r=8,  # Rank of the low-rank matrices
-    target_modules=["classifier"],  # Apply Lora to the classifier layer
+config = LoraConfig(
+    r=16,
+    lora_alpha=16,
+    target_modules=["distilbert.transformer.layer.0.attention.q_lin", "classifier"],
+    lora_dropout=0.1,
+    bias="none",
+    modules_to_save=["classifier"],
 )
-
-# Create the PeftModel
-peft_model = PeftModel.from_pretrained(model)
-
-# Freeze base model parameters
-for param in peft_model.base_model.parameters():
-    param.requires_grad = False
-
-# Print the number of trainable parameters
-print(sum(p.numel() for p in peft_model.parameters() if p.requires_grad)) 
+model = get_peft_model(model, config)
+model.print_trainable_parameters()
