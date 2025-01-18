@@ -99,7 +99,7 @@ trainer.train()
 
 trainer.evaluate()
 
-from peft import LoraConfig, PeftModel, get_peft_model
+from peft import LoraConfig, PeftModel, get_peft_model, TaskType
 
 config = LoraConfig(
     r=16,
@@ -108,6 +108,8 @@ config = LoraConfig(
     lora_dropout=0.1,
     bias="none",
     modules_to_save=["classifier"],
+    task_type=TaskType.SEQ_CLS
+
 )
 model = get_peft_model(model, config)
 model.print_trainable_parameters()
@@ -129,8 +131,8 @@ peft_training_args = TrainingArguments(
 peft_trainer = Trainer(
     model=model,
     args=peft_training_args,
-    train_dataset=tokenized_ds["train"],
-    eval_dataset=tokenized_ds["test"],
+    train_dataset= tokenized_ds['train'].rename_column('label', 'labels'),
+    eval_dataset= tokenized_ds['test'].rename_column('label', 'labels'),
     tokenizer=tokenizer,
     data_collator=DataCollatorWithPadding(tokenizer=tokenizer),
     compute_metrics=compute_metrics,
