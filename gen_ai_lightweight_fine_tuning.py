@@ -146,3 +146,34 @@ peft_trainer.train()
 
 # Save the PEFT model weights
 model.save_pretrained("./peft_sentiment_analysis")
+
+from peft import AutoPeftModelForSequenceClassification
+
+fine_tuned_model = AutoPeftModelForSequenceClassification.from_pretrained("./peft_sentiment_analysis")
+# Create the Trainer instance 
+peft_training_args = TrainingArguments(
+    output_dir="./data/peft_sentiment_analysis",
+    learning_rate=2e-3,
+    per_device_train_batch_size=4,
+    per_device_eval_batch_size=4,
+    num_train_epochs=1,
+    weight_decay=0.01,
+    evaluation_strategy="epoch",
+    save_strategy="epoch",
+    load_best_model_at_end=True,
+)
+
+# Create a new Trainer instance for the PEFT model
+peft_trainer = Trainer(
+    model=fine_tuned_model,
+    args=peft_training_args,
+    train_dataset= tokenized_ds['train'].rename_column('label', 'labels'),
+    eval_dataset= tokenized_ds['test'].rename_column('label', 'labels'),
+    tokenizer=tokenizer,
+    data_collator=DataCollatorWithPadding(tokenizer=tokenizer),
+    compute_metrics=compute_metrics,
+)
+# Evaluate the model 
+results = trainer.evaluate() 
+# Print the evaluation results 
+print(results)
