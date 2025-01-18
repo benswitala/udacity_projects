@@ -104,10 +104,43 @@ from peft import LoraConfig, PeftModel, get_peft_model
 config = LoraConfig(
     r=16,
     lora_alpha=16,
-    target_modules=["distilbert.transformer.layer.0.attention.q_lin", "classifier"],
+    target_modules=["distilbert.transformer.layer.0.attention.q_lin"],
     lora_dropout=0.1,
     bias="none",
     modules_to_save=["classifier"],
 )
 model = get_peft_model(model, config)
 model.print_trainable_parameters()
+
+# Define new training arguments for the PEFT model
+peft_training_args = TrainingArguments(
+    output_dir="./data/peft_sentiment_analysis",
+    learning_rate=2e-3,
+    per_device_train_batch_size=4,
+    per_device_eval_batch_size=4,
+    num_train_epochs=1,
+    weight_decay=0.01,
+    evaluation_strategy="epoch",
+    save_strategy="epoch",
+    load_best_model_at_end=True,
+)
+
+# Create a new Trainer instance for the PEFT model
+peft_trainer = Trainer(
+    model=model,
+    args=peft_training_args,
+    train_dataset=tokenized_ds["train"],
+    eval_dataset=tokenized_ds["test"],
+    tokenizer=tokenizer,
+    data_collator=DataCollatorWithPadding(tokenizer=tokenizer),
+    compute_metrics=compute_metrics,
+)
+
+# Train the PEFT model
+peft_trainer.train()
+
+# Evaluate the PEFT model
+# peft_trainer.evaluate()
+
+# Save the PEFT model weights
+model.save_pretrained("./peft_sentiment_analysis")
