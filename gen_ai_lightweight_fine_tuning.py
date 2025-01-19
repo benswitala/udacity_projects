@@ -1,5 +1,3 @@
-#this is partially copied from a Udacity exercise, and I liberally used LLMs (Udacity AI, Bing CoPilot, Google Gemini) to write the rest.
-
 #Dear Student
 
 #Please use AutoModelForSequenceClassification for loading the pretrained model
@@ -22,6 +20,20 @@ for split in splits:
 # Show the dataset
 ds
 
+
+
+
+# SOLUTION
+
+
+
+
+
+
+#trainer.train()
+
+
+
 from transformers import AutoTokenizer
 
 tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
@@ -42,9 +54,6 @@ assert tokenized_ds["train"][0]["input_ids"][:5] == [101, 2045, 2003, 2053, 7189
 
 # Show the first example of the tokenized training set
 print(tokenized_ds["train"][0]["input_ids"])
-
-
-# SOLUTION
 
 from transformers import AutoModelForSequenceClassification
 
@@ -71,13 +80,12 @@ def compute_metrics(eval_pred):
     predictions = np.argmax(predictions, axis=1)
     return {"accuracy": (predictions == labels).mean()}
 
-
 # The HuggingFace Trainer class handles the training and eval loop for PyTorch for us.
 # Read more about it here https://huggingface.co/docs/transformers/main_classes/trainer
 trainer = Trainer(
     model=model,
     args=TrainingArguments(
-        output_dir="./data/sentiment_analysis",
+        output_dir="./sentiment_analysis",
         learning_rate=2e-3,
         # Reduce the batch size if you don't have enough memory
         per_device_train_batch_size=4,
@@ -95,8 +103,6 @@ trainer = Trainer(
     compute_metrics=compute_metrics,
 )
 
-trainer.train()
-
 trainer.evaluate()
 
 from peft import LoraConfig, PeftModel, get_peft_model, TaskType
@@ -111,12 +117,22 @@ config = LoraConfig(
     task_type=TaskType.SEQ_CLS
 
 )
+
+
+
+
+
+
+# Evaluate the PEFT model
+# peft_trainer.evaluate()
+
+
 model = get_peft_model(model, config)
 model.print_trainable_parameters()
 
 # Define new training arguments for the PEFT model
 peft_training_args = TrainingArguments(
-    output_dir="./data/peft_sentiment_analysis",
+    output_dir="./peft_sentiment_analysis",
     learning_rate=2e-3,
     per_device_train_batch_size=4,
     per_device_eval_batch_size=4,
@@ -141,18 +157,21 @@ peft_trainer = Trainer(
 # Train the PEFT model
 peft_trainer.train()
 
-# Evaluate the PEFT model
-# peft_trainer.evaluate()
-
 # Save the PEFT model weights
 model.save_pretrained("./peft_sentiment_analysis")
+
+#!pip install --upgrade datasets==3.2.0 huggingface-hub==0.27.1
 
 from peft import AutoPeftModelForSequenceClassification
 
 fine_tuned_model = AutoPeftModelForSequenceClassification.from_pretrained("./peft_sentiment_analysis")
+
+
+
+
 # Create the Trainer instance 
 peft_training_args = TrainingArguments(
-    output_dir="./data/peft_sentiment_analysis",
+    output_dir="./peft_sentiment_analysis",
     learning_rate=2e-3,
     per_device_train_batch_size=4,
     per_device_eval_batch_size=4,
@@ -173,7 +192,9 @@ peft_trainer = Trainer(
     data_collator=DataCollatorWithPadding(tokenizer=tokenizer),
     compute_metrics=compute_metrics,
 )
+
 # Evaluate the model 
 results = trainer.evaluate() 
+
 # Print the evaluation results 
 print(results)
